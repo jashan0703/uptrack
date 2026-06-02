@@ -5,8 +5,9 @@ import { LogOut } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { ThemeToggle } from "@/components/theme-toggle"
+import { WorkPulseLogo } from "@/components/workpulse-logo"
 import { useAppDispatch, useAppSelector } from "@/store/hooks"
-import { logout } from "@/store/slices/auth-slice"
+import { logoutUser } from "@/store/slices/auth-slice"
 import { toast } from "sonner"
 
 export function DashboardHeader() {
@@ -14,8 +15,8 @@ export function DashboardHeader() {
   const router = useRouter()
   const { currentUser } = useAppSelector((state) => state.auth)
 
-  const handleLogout = () => {
-    dispatch(logout())
+  const handleLogout = async () => {
+    await dispatch(logoutUser())
     toast.success("Signed out successfully")
     router.push("/")
   }
@@ -23,11 +24,9 @@ export function DashboardHeader() {
   return (
     <header className="flex items-center justify-between border-b border-border bg-card px-4 py-3 sm:px-6">
       <div className="flex items-center gap-3">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
-          <span className="text-sm font-bold text-primary-foreground">C</span>
-        </div>
+        <WorkPulseLogo />
         <div>
-          <h1 className="text-sm font-semibold text-card-foreground">Copan Developers</h1>
+          <h1 className="text-sm font-semibold text-card-foreground">WorkPulse</h1>
           <p className="text-xs text-muted-foreground">
             {currentUser?.name} - {currentUser?.jobRole}
           </p>

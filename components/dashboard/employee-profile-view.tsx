@@ -9,8 +9,8 @@ import { PerformanceCharts } from "@/components/dashboard/performance-charts"
 import { AIReviewCard } from "@/components/dashboard/ai-review-card"
 import { PastReports } from "@/components/dashboard/past-reports"
 import { useAppDispatch, useAppSelector } from "@/store/hooks"
-import { loadReportsForUser } from "@/store/slices/reports-slice"
-import { generateHeatmapData, sampleTasks, sampleAIReports } from "@/data/sample-data"
+import { fetchReportsForUser } from "@/store/slices/reports-slice"
+import { tasksFromReports, heatmapFromTasks } from "@/lib/derive"
 import type { User } from "@/lib/types"
 
 interface EmployeeProfileViewProps {
@@ -20,19 +20,19 @@ interface EmployeeProfileViewProps {
 
 export function EmployeeProfileView({ employee, onBack }: EmployeeProfileViewProps) {
   const dispatch = useAppDispatch()
-  const { dailyReports } = useAppSelector((state) => state.reports)
+  const { dailyReports, aiReports } = useAppSelector((state) => state.reports)
 
   useEffect(() => {
-    dispatch(loadReportsForUser(employee.id))
+    dispatch(fetchReportsForUser(employee.id))
   }, [employee.id, dispatch])
 
-  const heatmapData = useMemo(() => generateHeatmapData(employee.id), [employee.id])
-  const tasks = useMemo(() => sampleTasks[employee.id] || [], [employee.id])
+  const reports = useMemo(() => dailyReports[employee.id] || [], [dailyReports, employee.id])
+  const tasks = useMemo(() => tasksFromReports(reports), [reports])
+  const heatmapData = useMemo(() => heatmapFromTasks(tasks), [tasks])
   const aiReport = useMemo(
-    () => sampleAIReports.find((r) => r.userId === employee.id),
-    [employee.id]
+    () => aiReports.find((r) => r.userId === employee.id),
+    [aiReports, employee.id]
   )
-  const reports = dailyReports[employee.id] || []
 
   return (
     <div className="flex flex-col gap-6">

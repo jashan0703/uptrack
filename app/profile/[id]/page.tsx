@@ -13,35 +13,51 @@ import { PerformanceCharts } from "@/components/dashboard/performance-charts"
 import { AIReviewCard } from "@/components/dashboard/ai-review-card"
 import { PastReports } from "@/components/dashboard/past-reports"
 import { useAppSelector, useAppDispatch } from "@/store/hooks"
-import { loadReportsForUser } from "@/store/slices/reports-slice"
-import { generateHeatmapData, sampleTasks, sampleAIReports } from "@/data/sample-data"
+import { fetchReportsForUser, fetchAIReports } from "@/store/slices/reports-slice"
+import { fetchUsers } from "@/store/slices/users-slice"
+import { tasksFromReports, heatmapFromTasks } from "@/lib/derive"
 
 export default function ProfilePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
   const router = useRouter()
   const dispatch = useAppDispatch()
-  const { isAuthenticated } = useAppSelector((state) => state.auth)
+  const { isAuthenticated, authChecked } = useAppSelector((state) => state.auth)
   const { users } = useAppSelector((state) => state.users)
-  const { dailyReports } = useAppSelector((state) => state.reports)
+  const { dailyReports, aiReports } = useAppSelector((state) => state.reports)
 
   const employee = users.find((u) => u.id === id)
 
   useEffect(() => {
-    if (!isAuthenticated) {
+    if (authChecked && !isAuthenticated) {
       router.push("/")
     }
-  }, [isAuthenticated, router])
+  }, [authChecked, isAuthenticated, router])
 
   useEffect(() => {
-    if (id) {
-      dispatch(loadReportsForUser(id))
+    if (isAuthenticated) {
+      if (users.length === 0) dispatch(fetchUsers())
+      if (aiReports.length === 0) dispatch(fetchAIReports())
     }
-  }, [id, dispatch])
+  }, [isAuthenticated, users.length, aiReports.length, dispatch])
 
-  const heatmapData = useMemo(() => generateHeatmapData(id), [id])
-  const tasks = useMemo(() => sampleTasks[id] || [], [id])
-  const aiReport = useMemo(() => sampleAIReports.find((r) => r.userId === id), [id])
-  const reports = dailyReports[id] || []
+  useEffect(() => {
+    if (id && isAuthenticated) {
+      dispatch(fetchReportsForUser(id))
+    }
+  }, [id, isAuthenticated, dispatch])
+
+  const reports = useMemo(() => dailyReports[id] || [], [dailyReports, id])
+  const tasks = useMemo(() => tasksFromReports(reports), [reports])
+  const heatmapData = useMemo(() => heatmapFromTasks(tasks), [tasks])
+  const aiReport = useMemo(() => aiReports.find((r) => r.userId === id), [aiReports, id])
+
+  if (!authChecked) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-background">
+        <p className="text-muted-foreground">Loading...</p>
+      </div>
+    )
+  }
 
   if (!isAuthenticated || !employee) {
     return (

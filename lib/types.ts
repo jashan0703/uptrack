@@ -5,7 +5,6 @@ export type AccessLevel = "full" | "manage_team" | "view_only" | "self_only"
 export interface User {
   id: string
   username: string
-  password: string
   email: string
   name: string
   role: Role

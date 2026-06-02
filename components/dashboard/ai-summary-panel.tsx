@@ -1,17 +1,24 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useEffect, useState } from "react"
 import { Brain, User, FolderKanban, Building2, Loader2 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { useAppSelector } from "@/store/hooks"
-import { sampleTasks } from "@/data/sample-data"
+import { useAppDispatch, useAppSelector } from "@/store/hooks"
+import { fetchAllTasks } from "@/store/slices/reports-slice"
 
 export function AISummaryPanel() {
+  const dispatch = useAppDispatch()
   const { users } = useAppSelector((state) => state.users)
   const { projects } = useAppSelector((state) => state.projects)
+  const { allTasks } = useAppSelector((state) => state.reports)
+
+  useEffect(() => {
+    dispatch(fetchAllTasks())
+  }, [dispatch])
+
   const [selectedUser, setSelectedUser] = useState("")
   const [selectedProject, setSelectedProject] = useState("")
   const [summaryType, setSummaryType] = useState("employee")
@@ -23,7 +30,7 @@ export function AISummaryPanel() {
   const generateEmployeeSummary = (userId: string) => {
     const user = users.find((u) => u.id === userId)
     if (!user) return ""
-    const tasks = sampleTasks[userId] || []
+    const tasks = allTasks.filter((t) => t.userId === userId)
     const recent = tasks.filter((t) => t.date >= "2026-01-01")
     const completed = recent.filter((t) => t.completed)
     const tagCounts: Record<string, number> = {}
@@ -39,9 +46,9 @@ export function AISummaryPanel() {
   const generateProjectSummary = (projectId: string) => {
     const project = projects.find((p) => p.id === projectId)
     if (!project) return ""
-    const allProjectTasks = Object.values(sampleTasks)
-      .flat()
-      .filter((t) => t.project === projectId && t.date >= "2026-01-01")
+    const allProjectTasks = allTasks.filter(
+      (t) => t.project === projectId && t.date >= "2026-01-01",
+    )
     const completed = allProjectTasks.filter((t) => t.completed)
     const contributors = new Set(allProjectTasks.map((t) => t.userId))
 
@@ -49,12 +56,14 @@ export function AISummaryPanel() {
   }
 
   const generateCompanySummary = () => {
-    const allTasks = Object.values(sampleTasks).flat().filter((t) => t.date >= "2026-01-01")
-    const completed = allTasks.filter((t) => t.completed)
+    const recentTasks = allTasks.filter((t) => t.date >= "2026-01-01")
+    const completed = recentTasks.filter((t) => t.completed)
     const activeEmployees = users.filter((u) => u.isActive && u.role !== "root_admin").length
     const activeProjectCount = projects.filter((p) => p.status === "active").length
 
-    return `**Company Overview - Q1 2026**\n\nCopan Developers currently has ${activeEmployees} active employees across ${new Set(users.map((u) => u.department)).size} departments, working on ${activeProjectCount} active projects.\n\nSince January 2026:\n- Total tasks logged: ${allTasks.length}\n- Tasks completed: ${completed.length} (${Math.round((completed.length / allTasks.length) * 100)}% completion rate)\n- Average tasks per employee: ${Math.round(allTasks.length / activeEmployees)}\n\nThe engineering department continues to be the largest contributor, with strong output across all active projects. Overall productivity metrics are healthy, with consistent daily task submissions and high completion rates across the organization.`
+    const completionRate = recentTasks.length > 0 ? Math.round((completed.length / recentTasks.length) * 100) : 0
+    const avgPerEmployee = activeEmployees > 0 ? Math.round(recentTasks.length / activeEmployees) : 0
+    return `**Company Overview - Q1 2026**\n\nWorkPulse currently has ${activeEmployees} active employees across ${new Set(users.map((u) => u.department)).size} departments, working on ${activeProjectCount} active projects.\n\nSince January 2026:\n- Total tasks logged: ${recentTasks.length}\n- Tasks completed: ${completed.length} (${completionRate}% completion rate)\n- Average tasks per employee: ${avgPerEmployee}\n\nThe engineering department continues to be the largest contributor, with strong output across all active projects. Overall productivity metrics are healthy, with consistent daily task submissions and high completion rates across the organization.`
   }
 
   const handleGenerate = async () => {

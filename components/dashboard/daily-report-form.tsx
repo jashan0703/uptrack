@@ -62,13 +62,19 @@ export function DailyReportForm({ userId }: DailyReportFormProps) {
     setTimeTaken("")
   }
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (currentDayTasks.length === 0) {
       toast.error("Add at least one task before submitting")
       return
     }
-    dispatch(submitDailyReport({ userId, date: "2026-02-10" }))
-    toast.success("Daily report submitted successfully")
+    try {
+      await dispatch(
+        submitDailyReport({ userId, date: "2026-02-10", tasks: currentDayTasks }),
+      ).unwrap()
+      toast.success("Daily report submitted successfully")
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to submit report")
+    }
   }
 
   return (

@@ -3,9 +3,9 @@
 import React from "react"
 
 import { useState } from "react"
-import Image from "next/image"
 import { Camera, Briefcase, Calendar, DollarSign } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
@@ -54,15 +54,12 @@ export function ProfileCard({ user }: ProfileCardProps) {
         <div className="flex flex-col items-center gap-6 sm:flex-row sm:items-start">
           {/* Profile Image */}
           <div className="relative">
-            <div className="h-24 w-24 overflow-hidden rounded-full border-2 border-border">
-              <Image
-                src={user.profileImage || "/placeholder-user.jpg"}
-                alt={user.name}
-                width={96}
-                height={96}
-                className="h-full w-full object-cover"
-              />
-            </div>
+            <Avatar className="h-24 w-24 border-2 border-border">
+              <AvatarImage src={user.profileImage} alt={user.name} />
+              <AvatarFallback className="text-lg font-semibold">
+                {user.name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)}
+              </AvatarFallback>
+            </Avatar>
             <Dialog open={imageModalOpen} onOpenChange={setImageModalOpen}>
               <DialogTrigger asChild>
                 <Button

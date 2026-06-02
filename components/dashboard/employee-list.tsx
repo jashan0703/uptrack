@@ -1,9 +1,9 @@
 "use client"
 
 import { useState } from "react"
-import Image from "next/image"
 import { Search, UserX, Eye } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -20,7 +20,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { useAppDispatch, useAppSelector } from "@/store/hooks"
-import { removeUser } from "@/store/slices/users-slice"
+import { deactivateUser } from "@/store/slices/users-slice"
 import type { User } from "@/lib/types"
 import { toast } from "sonner"
 
@@ -56,9 +56,13 @@ export function EmployeeList({ canRemove = false, onViewProfile, filterByManager
     employee: "Employee",
   }
 
-  const handleRemove = (user: User) => {
-    dispatch(removeUser(user.id))
-    toast.success(`${user.name} has been removed from the organization`)
+  const handleRemove = async (user: User) => {
+    try {
+      await dispatch(deactivateUser(user.id)).unwrap()
+      toast.success(`${user.name} has been removed from the organization`)
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to remove user")
+    }
   }
 
   return (
@@ -88,15 +92,12 @@ export function EmployeeList({ canRemove = false, onViewProfile, filterByManager
                 className="flex items-center justify-between rounded-lg border border-border p-3 transition-colors hover:bg-muted/30"
               >
                 <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 overflow-hidden rounded-full border border-border">
-                    <Image
-                      src={user.profileImage || "/placeholder-user.jpg"}
-                      alt={user.name}
-                      width={40}
-                      height={40}
-                      className="h-full w-full object-cover"
-                    />
-                  </div>
+                  <Avatar className="h-10 w-10 border border-border">
+                    <AvatarImage src={user.profileImage} alt={user.name} />
+                    <AvatarFallback className="text-xs font-medium">
+                      {user.name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)}
+                    </AvatarFallback>
+                  </Avatar>
                   <div>
                     <p className="text-sm font-medium text-card-foreground">{user.name}</p>
                     <p className="text-xs text-muted-foreground">

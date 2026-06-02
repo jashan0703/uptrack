@@ -1,23 +1,24 @@
 "use client"
 
-import { useMemo } from "react"
+import { useEffect, useMemo } from "react"
 import { Users, FolderKanban, CheckCircle2, Clock } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend, LineChart, Line } from "recharts"
-import { useAppSelector } from "@/store/hooks"
-import { sampleTasks } from "@/data/sample-data"
+import { useAppDispatch, useAppSelector } from "@/store/hooks"
+import { fetchAllTasks } from "@/store/slices/reports-slice"
 
 export function CompanyOverview() {
+  const dispatch = useAppDispatch()
   const { users } = useAppSelector((state) => state.users)
   const { projects } = useAppSelector((state) => state.projects)
+  const { allTasks } = useAppSelector((state) => state.reports)
+
+  useEffect(() => {
+    dispatch(fetchAllTasks())
+  }, [dispatch])
 
   const activeUsers = users.filter((u) => u.isActive)
   const activeProjects = projects.filter((p) => p.status === "active")
-
-  // Total tasks across all users
-  const allTasks = useMemo(() => {
-    return Object.values(sampleTasks).flat()
-  }, [])
 
   const completedTasks = allTasks.filter((t) => t.completed)
 
@@ -77,14 +78,17 @@ export function CompanyOverview() {
 
   // User contribution to projects
   const userContribData = useMemo(() => {
+    const byUser: Record<string, number> = {}
+    for (const t of allTasks) {
+      byUser[t.userId] = (byUser[t.userId] || 0) + 1
+    }
     const data: Array<{ user: string; tasks: number }> = []
     for (const u of activeUsers) {
       if (u.role === "root_admin") continue
-      const userTasks = sampleTasks[u.id] || []
-      data.push({ user: u.name.split(" ")[0], tasks: userTasks.length })
+      data.push({ user: u.name.split(" ")[0], tasks: byUser[u.id] || 0 })
     }
     return data.sort((a, b) => b.tasks - a.tasks).slice(0, 10)
-  }, [activeUsers])
+  }, [activeUsers, allTasks])
 
   const COLORS = [
     "hsl(217, 91%, 50%)",

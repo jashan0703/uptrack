@@ -6,23 +6,37 @@ import { DashboardHeader } from "@/components/dashboard/dashboard-header"
 import { EmployeeDashboard } from "@/components/dashboard/employee-dashboard"
 import { AdminDashboard } from "@/components/dashboard/admin-dashboard"
 import { RootAdminDashboard } from "@/components/dashboard/root-admin-dashboard"
-import { useAppSelector } from "@/store/hooks"
+import { useAppSelector, useAppDispatch } from "@/store/hooks"
+import { fetchUsers } from "@/store/slices/users-slice"
+import { fetchProjects } from "@/store/slices/projects-slice"
+import { fetchAIReports } from "@/store/slices/reports-slice"
 import { ScrollArea } from "@/components/ui/scroll-area"
 
 export default function DashboardPage() {
   const router = useRouter()
-  const { isAuthenticated, currentUser } = useAppSelector((state) => state.auth)
+  const dispatch = useAppDispatch()
+  const { isAuthenticated, authChecked, currentUser } = useAppSelector((state) => state.auth)
 
   useEffect(() => {
-    if (!isAuthenticated) {
+    if (authChecked && !isAuthenticated) {
       router.push("/")
     }
-  }, [isAuthenticated, router])
+  }, [authChecked, isAuthenticated, router])
 
-  if (!isAuthenticated || !currentUser) {
+  useEffect(() => {
+    if (isAuthenticated) {
+      dispatch(fetchUsers())
+      dispatch(fetchProjects())
+      dispatch(fetchAIReports())
+    }
+  }, [isAuthenticated, dispatch])
+
+  if (!authChecked || !isAuthenticated || !currentUser) {
     return (
       <div className="flex h-screen items-center justify-center bg-background">
-        <p className="text-muted-foreground">Redirecting to login...</p>
+        <p className="text-muted-foreground">
+          {authChecked ? "Redirecting to login..." : "Loading..."}
+        </p>
       </div>
     )
   }

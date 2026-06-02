@@ -10,8 +10,8 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
-import { useAppDispatch, useAppSelector } from "@/store/hooks"
-import { addUser } from "@/store/slices/users-slice"
+import { useAppDispatch } from "@/store/hooks"
+import { onboardUser } from "@/store/slices/users-slice"
 import type { Role, AccessLevel } from "@/lib/types"
 import { toast } from "sonner"
 
@@ -22,7 +22,7 @@ interface OnboardEmployeeProps {
 
 export function OnboardEmployee({ maxRole = "employee", maxAccessLevel = "self_only" }: OnboardEmployeeProps) {
   const dispatch = useAppDispatch()
-  const { currentUser } = useAppSelector((state) => state.auth)
+  const [submitting, setSubmitting] = useState(false)
 
   const [formData, setFormData] = useState({
     name: "",
@@ -34,7 +34,7 @@ export function OnboardEmployee({ maxRole = "employee", maxAccessLevel = "self_o
     dateOfBirth: "",
     payScale: "",
     bio: "",
-    role: "employee" as Role,
+    role: "employee" as "admin" | "employee",
     accessLevel: "self_only" as AccessLevel,
   })
 
@@ -56,38 +56,39 @@ export function OnboardEmployee({ maxRole = "employee", maxAccessLevel = "self_o
     return levels
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!formData.name || !formData.username || !formData.email || !formData.password) {
       toast.error("Please fill in all required fields")
       return
     }
-
-    const newUser = {
-      id: `u${Date.now()}`,
-      ...formData,
-      profileImage: "/placeholder-user.jpg",
-      managerId: currentUser?.id || null,
-      createdAt: "2026-02-10",
-      isActive: true,
+    if (formData.password.length < 8) {
+      toast.error("Initial password must be at least 8 characters")
+      return
     }
 
-    dispatch(addUser(newUser))
-    toast.success(`${formData.name} has been onboarded successfully`)
-
-    setFormData({
-      name: "",
-      username: "",
-      email: "",
-      password: "",
-      jobRole: "",
-      department: "",
-      dateOfBirth: "",
-      payScale: "",
-      bio: "",
-      role: "employee",
-      accessLevel: "self_only",
-    })
+    setSubmitting(true)
+    try {
+      await dispatch(onboardUser(formData)).unwrap()
+      toast.success(`${formData.name} has been onboarded successfully`)
+      setFormData({
+        name: "",
+        username: "",
+        email: "",
+        password: "",
+        jobRole: "",
+        department: "",
+        dateOfBirth: "",
+        payScale: "",
+        bio: "",
+        role: "employee",
+        accessLevel: "self_only",
+      })
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to onboard employee")
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   const handleSendInvite = () => {
@@ -131,7 +132,7 @@ export function OnboardEmployee({ maxRole = "employee", maxAccessLevel = "self_o
               <Label className="text-sm">Email *</Label>
               <Input
                 type="email"
-                placeholder="john@copan.dev"
+                placeholder="john@workpulse.dev"
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 required
@@ -196,7 +197,7 @@ export function OnboardEmployee({ maxRole = "employee", maxAccessLevel = "self_o
             </div>
             <div className="flex flex-col gap-1.5">
               <Label className="text-sm">Role</Label>
-              <Select value={formData.role} onValueChange={(v) => setFormData({ ...formData, role: v as Role })}>
+              <Select value={formData.role} onValueChange={(v) => setFormData({ ...formData, role: v as "admin" | "employee" })}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -236,9 +237,9 @@ export function OnboardEmployee({ maxRole = "employee", maxAccessLevel = "self_o
           </div>
 
           <div className="flex items-center gap-3">
-            <Button type="submit" className="bg-primary text-primary-foreground hover:bg-primary/90">
+            <Button type="submit" disabled={submitting} className="bg-primary text-primary-foreground hover:bg-primary/90">
               <UserPlus className="mr-1 h-4 w-4" />
-              Onboard Employee
+              {submitting ? "Onboarding..." : "Onboard Employee"}
             </Button>
             <Button type="button" variant="outline" onClick={handleSendInvite}>
               <Mail className="mr-1 h-4 w-4" />

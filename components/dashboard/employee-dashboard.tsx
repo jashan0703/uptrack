@@ -8,29 +8,29 @@ import { DailyReportForm } from "@/components/dashboard/daily-report-form"
 import { PastReports } from "@/components/dashboard/past-reports"
 import { AIReviewCard } from "@/components/dashboard/ai-review-card"
 import { useAppSelector, useAppDispatch } from "@/store/hooks"
-import { loadReportsForUser } from "@/store/slices/reports-slice"
-import { generateHeatmapData, sampleTasks, sampleAIReports } from "@/data/sample-data"
+import { fetchReportsForUser } from "@/store/slices/reports-slice"
+import { tasksFromReports, heatmapFromTasks } from "@/lib/derive"
 
 export function EmployeeDashboard() {
   const dispatch = useAppDispatch()
   const { currentUser } = useAppSelector((state) => state.auth)
-  const { dailyReports } = useAppSelector((state) => state.reports)
+  const { dailyReports, aiReports } = useAppSelector((state) => state.reports)
 
   const userId = currentUser?.id || ""
 
   useEffect(() => {
     if (userId) {
-      dispatch(loadReportsForUser(userId))
+      dispatch(fetchReportsForUser(userId))
     }
   }, [userId, dispatch])
 
-  const heatmapData = useMemo(() => generateHeatmapData(userId), [userId])
-  const tasks = useMemo(() => sampleTasks[userId] || [], [userId])
+  const reports = useMemo(() => dailyReports[userId] || [], [dailyReports, userId])
+  const tasks = useMemo(() => tasksFromReports(reports), [reports])
+  const heatmapData = useMemo(() => heatmapFromTasks(tasks), [tasks])
   const aiReport = useMemo(
-    () => sampleAIReports.find((r) => r.userId === userId),
-    [userId]
+    () => aiReports.find((r) => r.userId === userId),
+    [aiReports, userId]
   )
-  const reports = dailyReports[userId] || []
 
   if (!currentUser) return null
 

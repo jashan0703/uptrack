@@ -11,7 +11,7 @@ const inter = Inter({ subsets: ["latin"], variable: "--font-inter" })
 const jetbrainsMono = JetBrains_Mono({ subsets: ["latin"], variable: "--font-jetbrains" })
 
 export const metadata: Metadata = {
-  title: "Copan Developers - Employee Productivity Platform",
+  title: "WorkPulse - Employee Productivity Platform",
   description:
     "Enterprise-grade employee productivity management platform with AI-powered insights, heatmaps, performance graphs, and role-based dashboards.",
 }
